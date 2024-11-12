@@ -23,6 +23,7 @@ export function getClosestDate(config: DateLimitConfig, targetDate: Date = new D
   //   currentDay
   // );
   const data = _getClosestDateHelper(
+    targetDate,
     makeYearGenerator(transformedConfig.year, currentYear),
     new GeneralGenerator(transformedConfig.month, currentMonth, 12),
     new GeneralGenerator(transformedConfig.day, currentDay, 31),
@@ -35,6 +36,7 @@ export function getClosestDate(config: DateLimitConfig, targetDate: Date = new D
 }
 
 function _getClosestDateHelper(
+  targetDate: Date,
   yearGenerator: YearGenerator,
   monthGenerator: GeneralGenerator,
   dayGenerator: GeneralGenerator,
@@ -62,10 +64,15 @@ function _getClosestDateHelper(
     const nextMonth = monthGenerator.next(shouldResetMonth).value;
     currentMonth = nextMonth.value;
 
+    if (currentMonth < 1 || currentMonth > 12) {
+      throw new Error('Month number must be within 1 and 12 inclusive');
+    }
+
     shouldResetDay ||= oldMonth > currentMonth;
 
     if (nextMonth.looped) {
       return _getClosestDateHelper(
+        targetDate,
         yearGenerator,
         monthGenerator,
         dayGenerator,
@@ -83,8 +90,15 @@ function _getClosestDateHelper(
   if (getNextDay) {
     const nextDay = dayGenerator.next(shouldResetDay).value;
     currentDay = nextDay.value;
+
+    if (currentDay === 0 || currentDay > 31) {
+      throw new Error('Day number must be less than or equal to 31');
+    }
+
+    console.log(nextDay);
     if (nextDay.looped) {
       return _getClosestDateHelper(
+        targetDate,
         yearGenerator,
         monthGenerator,
         dayGenerator,
@@ -102,29 +116,31 @@ function _getClosestDateHelper(
   const actualDay = standardizeDay(currentYear, currentMonth, currentDay);
   const date = createUTCDate(currentYear, currentMonth, actualDay);
 
-  const now = new Date();
-  if (!isValidDate(date, currentYear, currentMonth, actualDay) || date.valueOf() >= now.valueOf()) {
-    const resetMonth = date.getUTCMonth() > now.getUTCMonth();
-    const resetDay = resetMonth || date.getUTCDate() > now.getUTCDate();
-    if (resetMonth) {
-      monthGenerator.resetToLimit();
+  if (!isValidDate(date, currentYear, currentMonth, actualDay) || date.valueOf() >= targetDate.valueOf()) {
+    if (date.getUTCFullYear() === targetDate.getUTCFullYear()) {
+      const resetMonth = date.getUTCMonth() > targetDate.getUTCMonth();
+      const resetDay = resetMonth || date.getUTCDate() >= targetDate.getUTCDate();
+      if (resetMonth) {
+        monthGenerator.resetToStart();
+      }
+      if (resetMonth || resetDay) {
+        dayGenerator.resetToStart(true);
+      }
     }
-    if (resetMonth || resetDay) {
-      dayGenerator.resetToLimit();
-    }
-      return _getClosestDateHelper(
-        yearGenerator,
-        monthGenerator,
-        dayGenerator,
-        currentYear,
-        currentMonth,
-        currentDay,
-        false,
-        false,
-        true,
-        shouldResetMonth,
-        false
-      );
+    return _getClosestDateHelper(
+      targetDate,
+      yearGenerator,
+      monthGenerator,
+      dayGenerator,
+      currentYear,
+      currentMonth,
+      currentDay,
+      false,
+      false,
+      true,
+      shouldResetMonth,
+      false
+    );
   }
   return date;
 }

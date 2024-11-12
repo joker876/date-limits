@@ -10,7 +10,7 @@ export function* makeYearGenerator(
   switch (config.type) {
     case DateLimitPartType.Any: {
       let currentNum = startFrom;
-      while (currentNum >= 1) {
+      while (currentNum >= 1970) {
         yield currentNum--;
       }
       return null;
@@ -32,7 +32,7 @@ export function* makeYearGenerator(
       const { value: a, offset: b = 0 } = config;
       const x = Math.floor((startFrom - b) / a);
       let currentNum = a * x + b;
-      while (currentNum >= 1) {
+      while (currentNum >= 1970) {
         yield currentNum;
         currentNum -= a;
       }
@@ -57,7 +57,7 @@ export interface GeneralGeneratorResult {
 export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult> {
   private _currentNum!: number;
   private _nextFn!: (reset: boolean) => IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult>;
-  private _resetToLimitFn!: () => void;
+  private _resetToStartFn!: (minusOne: boolean) => void;
 
   constructor(
     private config: DateLimitPartConfig = { type: DateLimitPartType.Any },
@@ -66,37 +66,37 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
   ) {
     switch (config.type) {
       case DateLimitPartType.Static: {
-        this._staticResetToLimit();
+        this._staticResetToStart();
         this._nextFn = this._staticNext;
-        this._resetToLimitFn = this._staticResetToLimit;
+        this._resetToStartFn = this._staticResetToStart;
         break;
       }
       case DateLimitPartType.List: {
-        this._listResetToLimit();
+        this._listResetToStart();
         this._nextFn = this._listNext;
-        this._resetToLimitFn = this._listResetToLimit;
+        this._resetToStartFn = this._listResetToStart;
         break;
       }
       case DateLimitPartType.NSeries: {
         this.config = { type: DateLimitPartType.List, value: generateSequence(config, limit) };
-        this._listResetToLimit();
+        this._listResetToStart();
         this._nextFn = this._listNext;
-        this._resetToLimitFn = this._listResetToLimit;
+        this._resetToStartFn = this._listResetToStart;
         break;
       }
       case DateLimitPartType.Range: {
         if (config.value.to > limit) {
           config.value.to = limit;
         }
-        this._rangeResetToLimit();
+        this._rangeResetToStart(limit === 31);
         this._nextFn = this._rangeNext;
-        this._resetToLimitFn = this._rangeResetToLimit;
+        this._resetToStartFn = this._rangeResetToStart;
         break;
       }
       default: {
-        this._anyResetToLimit();
+        this._anyResetToStart(limit === 31);
         this._nextFn = this._anyNext;
-        this._resetToLimitFn = this._anyResetToLimit;
+        this._resetToStartFn = this._anyResetToStart;
         break;
       }
     }
@@ -105,8 +105,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
   next(reset: boolean = false): IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult> {
     return this._nextFn(reset);
   }
-  resetToLimit(): void {
-    this._resetToLimitFn();
+  resetToStart(minusOne: boolean = false): void {
+    this._resetToStartFn(minusOne);
   }
 
   //! Any
@@ -117,8 +117,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
   }
-  private _anyResetToLimit(): void {
-    this._currentNum = this.startFrom;
+  private _anyResetToStart(minusOne: boolean): void {
+    this._currentNum = this.startFrom - (minusOne ? 1 : 0);
   }
 
   //! Static
@@ -128,7 +128,7 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     this._looped = true;
     return nextVal;
   }
-  private _staticResetToLimit(): void {
+  private _staticResetToStart(): void {
     this._currentNum = (this.config as DateLimitStatic).value;
   }
 
@@ -142,8 +142,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: list[this._currentNum--], looped: false }, done: false };
   }
-  private _listResetToLimit(): void {
-    this._currentNum = (this.config as DateLimitList).value.findIndex(v => v > this.startFrom) - 1;
+  private _listResetToStart(): void {
+    this._currentNum = (this.config as DateLimitList).value.findIndex(v => v >= this.startFrom) - 1;
   }
 
   //! Range
@@ -155,8 +155,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
   }
-  private _rangeResetToLimit(): void {
-    this._currentNum = this.startFrom;
+  private _rangeResetToStart(minusOne: boolean): void {
+    this._currentNum = this.startFrom - (minusOne ? 1 : 0);
     if (this._currentNum > (this.config as DateLimitRange).value.to) {
       this._currentNum = (this.config as DateLimitRange).value.to;
     }

@@ -15,7 +15,7 @@
   },
   "scripts": {
     "test": "karma start karma.conf.js",
-    "start": "ts-node-dev --respawn src/index.ts",
+    "start": "watch \"cls && tsc --project tsconfig.cjs.json && node dist/cjs/index.js\" ./src/",
     "clean": "rmdir /s /Q dist",
     "build": "npm run clean && tsc -b ./tsconfig.cjs.json ./tsconfig.esm.json ./tsconfig.types.json && node ./scripts/prepare-package-json.js",
     "build:cjs": "tsc --project tsconfig.cjs.json",
