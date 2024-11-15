@@ -38,6 +38,13 @@ describe('generateSequence', () => {
     expect(() => generateSequence({ slope: 5, offset: Infinity }, 20)).toThrow();
   });
 
+  it('should return empty array when given NaN as slope', () => {
+    expect(generateSequence({ slope: NaN }, 20)).toEqual([]);
+  });
+  it('should return empty array when given NaN as offset', () => {
+    expect(generateSequence({ slope: 5, offset: NaN }, 20)).toEqual([]);
+  });
+
   it('should handle limits that are not divisible by slope', () => {
     const sequence = generateSequence({ slope: 4 }, 18);
     expect(sequence).toEqual([4, 8, 12, 16]);
