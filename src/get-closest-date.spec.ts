@@ -59,6 +59,9 @@ describe('getClosestDate', () => {
   it('should return null for year: list, month: February, day: 29 when supplied only non-leap years', () => {
     expect(iso({ year: [2003, 2019, 2023], month: 2, day: 29 })).toBe(null);
   });
+  it('should ignore years in a list that are larger than target year', () => {
+    expect(iso({ year: [2003, 2019, 2023, 2100], month: 2, day: 29 })).toBe(null);
+  });
   it('should return correct date for year: undefined, month: undefined, day: list (only before target)', () => {
     expect(iso({ day: [1, 2, 5] })).toBe(date(2024, 11, 5));
   });
@@ -75,13 +78,25 @@ describe('getClosestDate', () => {
     expect(iso({ year: { slope: 5 } })).toBe(date(2020, 12, 31));
   });
   it('should return correct date for year: 5n, month: 3n, day: 9n', () => {
-    expect(
-      iso({
-        year: { slope: 5 },
-        month: { slope: 3 },
-        day: { slope: 9 },
-      })
-    ).toBe(date(2020, 12, 27));
+    expect(iso({ year: { slope: 5 }, month: { slope: 3 }, day: { slope: 9 } })).toBe(date(2020, 12, 27));
+  });
+  it('should return null for year: 4n-1, month: February, day: 29', () => {
+    expect(iso({ year: { slope: 4, offset: -1 }, month: 2, day: 29 })).toBe(null);
+  });
+  it('should return correct date for year: from 2018 to 2022, month: February, day: 29', () => {
+    expect(iso({ year: { from: 2018, to: 2022 }, month: 2, day: 29 })).toBe(date(2020, 2, 29));
+  });
+  it('should throw for year range where "from" is larger than "to"', () => {
+    expect(() => iso({ year: { from: 2022, to: 2018 }, month: 2, day: 29 })).toThrow();
+  });
+  it('should return correct date for year range higher than target year', () => {
+    expect(iso({ year: { from: 2018, to: 2100 } })).toBe(date(2024, 11, 21));
+  });
+  it('should return null for year range all abive the target year', () => {
+    expect(iso({ year: { from: 2099, to: 2100 } })).toBe(null);
+  });
+  it('should return null for year: from 2021 to 2023, month: February, day: 29', () => {
+    expect(iso({ year: { from: 2021, to: 2023 }, month: 2, day: 29 })).toBe(null);
   });
   it('should return correct date for year: undefined, month: from 1 to 5, day: undefined', () => {
     expect(iso({ month: { from: 1, to: 5 } })).toBe(date(2024, 5, 31));
@@ -89,11 +104,17 @@ describe('getClosestDate', () => {
   it('should return correct date for year: undefined, month: from 1 to 12, day: undefined', () => {
     expect(iso({ month: { from: 1, to: 12 } })).toBe(date(2024, 11, 21));
   });
+  it('should throw for month range where "from" is larger than "to"', () => {
+    expect(() => iso({ month: { from: 12, to: 11 } })).toThrow();
+  });
   it('should return correct date for year: undefined, month: February, day: from 1 to 31', () => {
     expect(iso({ month: 2, day: { from: 1, to: 31 } })).toBe(date(2024, 2, 29));
   });
   it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
     expect(iso({ month: 2, day: { from: 30, to: 31 } })).toBe(null);
+  });
+  it('should throw for day range where "from" is larger than "to"', () => {
+    expect(() => iso({ day: { from: 31, to: 1 } })).toThrow();
   });
   it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
     expect(iso({ month: 2, day: 30 })).toBe(null);

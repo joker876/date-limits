@@ -37,6 +37,9 @@ export class GeneralGenerator {
       this._skipToFn = this._listSkipTo;
       return;
     }
+    if (config.from > config.to) {
+    throw new Error(`Config range cannot contain "from" value higher than "to" value.`);
+    }
     if (config.to > limit) {
       config.to = limit;
     }

@@ -37,9 +37,15 @@ export function* makeYearGenerator(
     }
     return null;
   }
+  if (config.from > startFrom) {
+    return null;
+  }
+  if (config.from > config.to) {
+    throw new Error(`Config range cannot contain "from" value higher than "to" value.`);
+  }
   let currentNum = startFrom > config.to ? config.to : startFrom;
+  // if config.from > startFrom then the loop will never run
   while (currentNum >= config.from) {
-    if (currentNum > startFrom) continue;
     yield currentNum--;
   }
   return null;
