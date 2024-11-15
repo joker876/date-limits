@@ -1,4 +1,4 @@
-import { generateSequence } from '../n-series';
+import { generateSequence } from '../sequence';
 import { DateLimitList, DateLimitPartConfig, DateLimitPartType, DateLimitRange, DateLimitStatic } from '../types';
 
 export interface GeneralGeneratorResult {
