@@ -1,5 +1,11 @@
-export function generateSequence(params: { value: number; offset?: number }, limit: number): number[] {
-  let { value: a, offset: b = 0 } = params;
+export function generateSequence(params: { slope: number; offset?: number }, limit: number): number[] {
+  let { slope: a, offset: b = 0 } = params;
+  if (Math.abs(a) === Infinity || Math.abs(b) === Infinity) {
+    throw new Error(`Slope and offset cannot be set to Infinity`);
+  }
+  if (isNaN(a) || isNaN(b)) {
+    return [];
+  }
   const result: number[] = [];
 
   b %= a;

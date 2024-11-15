@@ -1,10 +1,7 @@
-import { transformSimpleConfig } from './config-transformers';
 import { createUTCDate, isValidDate, standardizeDay } from './date-utils';
 import { GeneralGenerator, } from './generators/general-generator';
 import { makeYearGenerator, YearGenerator } from './generators/year-generator';
 import { DateLimitConfig } from './types';
-
-let passes = 0;
 
 export function getClosestDate(config: DateLimitConfig, targetDate: Date = new Date(), yearLimit: number = 1970) {
   let currentYear: number = targetDate.getFullYear(),
@@ -14,21 +11,16 @@ export function getClosestDate(config: DateLimitConfig, targetDate: Date = new D
   if (currentYear < yearLimit) {
     throw new Error(`Target date cannot be lower than the year limit.`);
   }
-
-  const transformedConfig = transformSimpleConfig(config);
-
-  passes = 0;
-
+  
   const data = _getClosestDateHelper(
     targetDate,
-    makeYearGenerator(transformedConfig.year, currentYear, yearLimit),
-    new GeneralGenerator(transformedConfig.month, currentMonth, 12),
-    new GeneralGenerator(transformedConfig.day, currentDay, 31),
+    makeYearGenerator(config.year, currentYear, yearLimit),
+    new GeneralGenerator(config.month, currentMonth, 12),
+    new GeneralGenerator(config.day, currentDay, 31),
     currentYear,
     currentMonth,
     currentDay
   );
-  console.log(passes);
   return data;
 }
 
@@ -47,7 +39,6 @@ function _getClosestDateHelper(
   shouldResetDay: boolean = true
 ): Date | null {
   while (true) {
-    passes++;
     if (getNextYear) {
       const oldYear = currentYear;
       const nextYear = yearGenerator.next().value;

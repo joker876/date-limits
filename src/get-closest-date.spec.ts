@@ -1,5 +1,5 @@
 import { getClosestDate } from './get-closest-date';
-import { DateLimitConfig, DateLimitPartType } from './types';
+import { DateLimitConfig } from './types';
 
 describe('getClosestDate', () => {
   const targetDate = new Date('2024-11-22T20:00:00.000Z');
@@ -54,52 +54,60 @@ describe('getClosestDate', () => {
     expect(iso({ month: 2, day: 29 })).toBe(date(2024, 2, 29));
   });
   it('should return correct date for year: list, month: February, day: 29', () => {
-    expect(iso({ year: { type: DateLimitPartType.List, value: [2004, 20019, 2023] }, month: 2, day: 29 })).toBe(
-      date(2004, 2, 29)
-    );
+    expect(iso({ year: [2004, 2019, 2023], month: 2, day: 29 })).toBe(date(2004, 2, 29));
+  });
+  it('should return null for year: list, month: February, day: 29 when supplied only non-leap years', () => {
+    expect(iso({ year: [2003, 2019, 2023], month: 2, day: 29 })).toBe(null);
   });
   it('should return correct date for year: undefined, month: undefined, day: list (only before target)', () => {
-    expect(iso({ day: { type: DateLimitPartType.List, value: [1, 2, 5] } })).toBe(date(2024, 11, 5));
+    expect(iso({ day: [1, 2, 5] })).toBe(date(2024, 11, 5));
   });
   it('should return correct date for year: undefined, month: undefined, day: 5n', () => {
-    expect(iso({ day: { type: DateLimitPartType.NSeries, value: 5 } })).toBe(date(2024, 11, 20));
+    expect(iso({ day: { slope: 5 } })).toBe(date(2024, 11, 20));
   });
   it('should return correct date for year: undefined, month: undefined, day: 5n-1', () => {
-    expect(iso({ day: { type: DateLimitPartType.NSeries, value: 5, offset: -1 } })).toBe(date(2024, 11, 19));
+    expect(iso({ day: { slope: 5, offset: -1 } })).toBe(date(2024, 11, 19));
   });
   it('should return correct date for year: undefined, month: undefined, day: 5n+2', () => {
-    expect(iso({ day: { type: DateLimitPartType.NSeries, value: 5, offset: 2 } })).toBe(date(2024, 11, 17));
+    expect(iso({ day: { slope: 5, offset: 2 } })).toBe(date(2024, 11, 17));
   });
   it('should return correct date for year: 5n, month: undefined, day: undefined', () => {
-    expect(iso({ year: { type: DateLimitPartType.NSeries, value: 5 } })).toBe(date(2020, 12, 31));
+    expect(iso({ year: { slope: 5 } })).toBe(date(2020, 12, 31));
   });
   it('should return correct date for year: 5n, month: 3n, day: 9n', () => {
     expect(
       iso({
-        year: { type: DateLimitPartType.NSeries, value: 5 },
-        month: { type: DateLimitPartType.NSeries, value: 3 },
-        day: { type: DateLimitPartType.NSeries, value: 9 },
+        year: { slope: 5 },
+        month: { slope: 3 },
+        day: { slope: 9 },
       })
     ).toBe(date(2020, 12, 27));
   });
   it('should return correct date for year: undefined, month: from 1 to 5, day: undefined', () => {
-    expect(iso({ month: { type: DateLimitPartType.Range, value: { from: 1, to: 5 } } })).toBe(date(2024, 5, 31));
+    expect(iso({ month: { from: 1, to: 5 } })).toBe(date(2024, 5, 31));
   });
   it('should return correct date for year: undefined, month: from 1 to 12, day: undefined', () => {
-    expect(iso({ month: { type: DateLimitPartType.Range, value: { from: 1, to: 12 } } })).toBe(date(2024, 11, 21));
+    expect(iso({ month: { from: 1, to: 12 } })).toBe(date(2024, 11, 21));
   });
   it('should return correct date for year: undefined, month: February, day: from 1 to 31', () => {
-    expect(iso({ month: 2, day: { type: DateLimitPartType.Range, value: { from: 1, to: 31 } } })).toBe(
-      date(2024, 2, 29)
-    );
+    expect(iso({ month: 2, day: { from: 1, to: 31 } })).toBe(date(2024, 2, 29));
   });
   it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
-    expect(iso({ month: 2, day: { type: DateLimitPartType.Range, value: { from: 30, to: 31 } } })).toBe(null);
+    expect(iso({ month: 2, day: { from: 30, to: 31 } })).toBe(null);
   });
   it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
     expect(iso({ month: 2, day: 30 })).toBe(null);
   });
   it('should throw for year: undefined, month: undefined, day: 32', () => {
     expect(() => iso({ day: 32 })).toThrow();
+  });
+  it('should handle ranges over the limit', () => {
+    expect(iso({ day: { from: 1, to: 40 } })).toBe(date(2024, 11, 21));
+  });
+  it('should handle ranges over the limit', () => {
+    expect(() => getClosestDate({}, new Date(0), 2000)).toThrow();
+  });
+  it('should handle invalid months gracefully', () => {
+    expect(() => iso({ month: 0 })).toThrow();
   });
 });
