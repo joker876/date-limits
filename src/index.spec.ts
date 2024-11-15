@@ -5,7 +5,7 @@ describe('getClosestDate', () => {
   const targetDate = new Date('2024-11-22T20:00:00.000Z');
 
   function iso(config: DateLimitConfig): string | null {
-    return getClosestDate(config, targetDate)?.toISOString() ?? null;
+    return getClosestDate(config, targetDate)?.toISOString?.() ?? null;
   }
   function date(year: number = 2024, month: number = 11, day: number = 11): string {
     const yearStr = year.toString().padStart(4, '0');
@@ -95,6 +95,9 @@ describe('getClosestDate', () => {
   });
   it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
     expect(iso({ month: 2, day: { type: DateLimitPartType.Range, value: { from: 30, to: 31 } } })).toBe(null);
+  });
+  it('should return null for year: undefined, month: February, day: from 30 to 31', () => {
+    expect(iso({ month: 2, day: 30 })).toBe(null);
   });
   it('should throw for year: undefined, month: undefined, day: 32', () => {
     expect(() => iso({ day: 32 })).toThrow();

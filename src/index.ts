@@ -1,8 +1,7 @@
-import { getClosestDate } from './get-closest-date';
 
 export * from './types';
 
-[
+// [
   // { year: 2023, month: 10, day: 19 },
   // { month: 10, day: 19 },
   // { month: 11 },
@@ -27,6 +26,6 @@ export * from './types';
   // },
   // { day: { type: DateLimitPartType.Range, value: { from: 1, to: 5 } } },
   // { month: 10, day: { type: DateLimitPartType.Range, value: { from: 1, to: 20 } } },
-].forEach(obj => {
-  console.log(getClosestDate(obj, new Date('2024-11-22T20:00:00.000Z')), obj);
-});
+// ].forEach(obj => {
+//   console.log(getClosestDate(obj, new Date('2024-11-22T20:00:00.000Z')), obj);
+// });

@@ -1,63 +1,15 @@
-import { generateSequence } from './n-series';
-import { DateLimitList, DateLimitPartConfig, DateLimitPartType, DateLimitRange, DateLimitStatic } from './types';
-
-export type YearGenerator = Generator<number | null, number | null>;
-
-export function* makeYearGenerator(
-  config: DateLimitPartConfig = { type: DateLimitPartType.Any },
-  startFrom: number
-): YearGenerator {
-  switch (config.type) {
-    case DateLimitPartType.Any: {
-      let currentNum = startFrom;
-      while (currentNum >= 1970) {
-        yield currentNum--;
-      }
-      return null;
-    }
-    case DateLimitPartType.Static: {
-      if (config.value <= startFrom) {
-        yield config.value;
-      }
-      return null;
-    }
-    case DateLimitPartType.List: {
-      for (let i = config.value.length; i >= 0; i--) {
-        if (config.value[i] > startFrom) continue;
-        yield config.value[i];
-      }
-      return null;
-    }
-    case DateLimitPartType.NSeries: {
-      const { value: a, offset: b = 0 } = config;
-      const x = Math.floor((startFrom - b) / a);
-      let currentNum = a * x + b;
-      while (currentNum >= 1970) {
-        yield currentNum;
-        currentNum -= a;
-      }
-      return null;
-    }
-    case DateLimitPartType.Range: {
-      let currentNum = startFrom > config.value.to ? config.value.to : startFrom;
-      while (currentNum >= config.value.from) {
-        if (currentNum > startFrom) continue;
-        yield currentNum--;
-      }
-      return null;
-    }
-  }
-}
+import { generateSequence } from '../n-series';
+import { DateLimitList, DateLimitPartConfig, DateLimitPartType, DateLimitRange, DateLimitStatic } from '../types';
 
 export interface GeneralGeneratorResult {
   value: number;
   looped: boolean;
 }
 
-export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult> {
+export class GeneralGenerator {
   private _currentNum!: number;
   private _nextFn!: (reset: boolean) => IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult>;
-  private _resetToStartFn!: (minusOne: boolean) => void;
+  private _skipToFn!: (to: number, minusOne: boolean) => void;
 
   constructor(
     private config: DateLimitPartConfig = { type: DateLimitPartType.Any },
@@ -66,37 +18,37 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
   ) {
     switch (config.type) {
       case DateLimitPartType.Static: {
-        this._staticResetToStart();
+        this._staticSkipTo();
         this._nextFn = this._staticNext;
-        this._resetToStartFn = this._staticResetToStart;
+        this._skipToFn = this._staticSkipTo;
         break;
       }
       case DateLimitPartType.List: {
-        this._listResetToStart();
+        this._listSkipTo();
         this._nextFn = this._listNext;
-        this._resetToStartFn = this._listResetToStart;
+        this._skipToFn = this._listSkipTo;
         break;
       }
       case DateLimitPartType.NSeries: {
         this.config = { type: DateLimitPartType.List, value: generateSequence(config, limit) };
-        this._listResetToStart();
+        this._listSkipTo();
         this._nextFn = this._listNext;
-        this._resetToStartFn = this._listResetToStart;
+        this._skipToFn = this._listSkipTo;
         break;
       }
       case DateLimitPartType.Range: {
         if (config.value.to > limit) {
           config.value.to = limit;
         }
-        this._rangeResetToStart(limit === 31);
+        this._rangeSkipTo(this.startFrom, limit === 31);
         this._nextFn = this._rangeNext;
-        this._resetToStartFn = this._rangeResetToStart;
+        this._skipToFn = this._rangeSkipTo;
         break;
       }
       default: {
-        this._anyResetToStart(limit === 31);
+        this._anySkipTo(undefined, limit === 31);
         this._nextFn = this._anyNext;
-        this._resetToStartFn = this._anyResetToStart;
+        this._skipToFn = this._anySkipTo;
         break;
       }
     }
@@ -105,8 +57,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
   next(reset: boolean = false): IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult> {
     return this._nextFn(reset);
   }
-  resetToStart(minusOne: boolean = false): void {
-    this._resetToStartFn(minusOne);
+  skipTo(to: number = this.startFrom, minusOne: boolean = false): void {
+    this._skipToFn(to, minusOne);
   }
 
   //! Any
@@ -117,8 +69,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
   }
-  private _anyResetToStart(minusOne: boolean): void {
-    this._currentNum = this.startFrom - (minusOne ? 1 : 0);
+  private _anySkipTo(to: number = this.startFrom, minusOne: boolean): void {
+    this._currentNum = to - (minusOne ? 1 : 0);
   }
 
   //! Static
@@ -128,7 +80,7 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     this._looped = true;
     return nextVal;
   }
-  private _staticResetToStart(): void {
+  private _staticSkipTo(): void {
     this._currentNum = (this.config as DateLimitStatic).value;
   }
 
@@ -142,8 +94,8 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: list[this._currentNum--], looped: false }, done: false };
   }
-  private _listResetToStart(): void {
-    this._currentNum = (this.config as DateLimitList).value.findIndex(v => v >= this.startFrom) - 1;
+  private _listSkipTo(to: number = this.startFrom): void {
+    this._currentNum = (this.config as DateLimitList).value.findIndex(v => v >= to) - 1;
   }
 
   //! Range
@@ -155,14 +107,10 @@ export class GeneralGenerator implements IterableIterator<GeneralGeneratorResult
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
   }
-  private _rangeResetToStart(minusOne: boolean): void {
-    this._currentNum = this.startFrom - (minusOne ? 1 : 0);
+  private _rangeSkipTo(to: number = this.startFrom, minusOne: boolean): void {
+    this._currentNum = to - (minusOne ? 1 : 0);
     if (this._currentNum > (this.config as DateLimitRange).value.to) {
       this._currentNum = (this.config as DateLimitRange).value.to;
     }
-  }
-
-  [Symbol.iterator]() {
-    return this;
   }
 }
