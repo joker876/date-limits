@@ -11,9 +11,9 @@ export class GeneralGenerator {
   private _nextFn!: (reset: boolean) => IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult>;
   private _skipToFn!: (to: number, minusOne: boolean) => void;
 
-  constructor(private config: DateLimitPartConfig = undefined, private startFrom: number, private limit: number) {
+  constructor(private config: DateLimitPartConfig = undefined, private startFrom: number, private upperLimit: number) {
     if (config === undefined) {
-      this._anySkipTo(undefined, limit === 31);
+      this._anySkipTo(undefined, upperLimit === 31);
       this._nextFn = this._anyNext;
       this._skipToFn = this._anySkipTo;
       return;
@@ -31,19 +31,21 @@ export class GeneralGenerator {
       return;
     }
     if ('slope' in config) {
-      this.config = generateSequence(config, limit);
+      this.config = generateSequence(config, upperLimit);
       this._listSkipTo();
       this._nextFn = this._listNext;
       this._skipToFn = this._listSkipTo;
       return;
     }
+    config.from ??= 1;
+    config.to ??= startFrom;
     if (config.from > config.to) {
-    throw new Error(`Config range cannot contain "from" value higher than "to" value.`);
+      throw new Error(`Config range cannot contain "from" value higher than "to" value.`);
     }
-    if (config.to > limit) {
-      config.to = limit;
+    if (config.to > upperLimit) {
+      config.to = upperLimit;
     }
-    this._rangeSkipTo(this.startFrom, limit === 31);
+    this._rangeSkipTo(this.startFrom, upperLimit === 31);
     this._nextFn = this._rangeNext;
     this._skipToFn = this._rangeSkipTo;
     return;
@@ -59,7 +61,7 @@ export class GeneralGenerator {
   //! Any
   private _anyNext(reset: boolean): IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult> {
     if (reset || this._currentNum === 0) {
-      this._currentNum = this.limit;
+      this._currentNum = this.upperLimit;
       return { value: { value: this._currentNum--, looped: !reset }, done: false };
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
@@ -76,12 +78,12 @@ export class GeneralGenerator {
     return nextVal;
   }
   private _staticSkipTo(): void {
-    this._currentNum = (this.config as DateLimitStatic);
+    this._currentNum = this.config as DateLimitStatic;
   }
 
   //! List
   private _listNext(reset: boolean): IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult> {
-    const list = (this.config as DateLimitList);
+    const list = this.config as DateLimitList;
 
     if (reset || this._currentNum < 0) {
       this._currentNum = list.length - 1;
@@ -95,17 +97,18 @@ export class GeneralGenerator {
 
   //! Range
   private _rangeNext(reset: boolean): IteratorResult<GeneralGeneratorResult, GeneralGeneratorResult> {
-    const range = (this.config as DateLimitRange);
+    const range = this.config as Required<DateLimitRange>;
     if (reset || this._currentNum === 0 || this._currentNum < range.from) {
-      this._currentNum = Math.min(range.to, this.limit);
+      this._currentNum = Math.min(range.to, this.upperLimit);
       return { value: { value: this._currentNum--, looped: !reset }, done: false };
     }
     return { value: { value: this._currentNum--, looped: false }, done: false };
   }
   private _rangeSkipTo(to: number = this.startFrom, minusOne: boolean): void {
+    const range = this.config as Required<DateLimitRange>;
     this._currentNum = to - (minusOne ? 1 : 0);
-    if (this._currentNum > (this.config as DateLimitRange).to) {
-      this._currentNum = (this.config as DateLimitRange).to;
+    if (this._currentNum > range.to) {
+      this._currentNum = range.to;
     }
   }
 }

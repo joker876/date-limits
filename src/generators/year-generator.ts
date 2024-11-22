@@ -5,11 +5,11 @@ export type YearGenerator = Generator<number | null, number | null>;
 export function* makeYearGenerator(
   config: DateLimitPartConfig = undefined,
   startFrom: number,
-  yearLimit: number = 1970
+  lowerLimit: number = 1970
 ): YearGenerator {
   if (config === undefined) {
     let currentNum = startFrom;
-    while (currentNum >= yearLimit) {
+    while (currentNum >= lowerLimit) {
       yield currentNum--;
     }
     return null;
@@ -31,17 +31,21 @@ export function* makeYearGenerator(
     const { slope: a, offset: b = 0 } = config;
     const x = Math.floor((startFrom - b) / a);
     let currentNum = a * x + b;
-    while (currentNum >= yearLimit) {
+    while (currentNum >= lowerLimit) {
       yield currentNum;
       currentNum -= a;
     }
     return null;
   }
+  config.from ??= lowerLimit;
+  config.to ??= startFrom;
   if (config.from > startFrom) {
     return null;
   }
   if (config.from > config.to) {
-    throw new Error(`Config range cannot contain "from" value higher than "to" value.`);
+    throw new Error(
+      `Config range cannot contain "from" value higher than "to" value, got ${config.from} and ${config.to} respectively.`
+    );
   }
   let currentNum = startFrom > config.to ? config.to : startFrom;
   // if config.from > startFrom then the loop will never run

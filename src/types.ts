@@ -1,3 +1,5 @@
+import { Range, RequiredAtLeastOne } from "./_internal-types";
+
 export interface DateLimitConfig {
   year?: number | DateLimitPartConfig;
   month?: number | DateLimitPartConfig;
@@ -9,17 +11,10 @@ export interface DateLimitConfigOnlyAdvanced {
   day?: DateLimitPartConfig;
 }
 
-export type Range<T> = { from: T; to: T };
-
 export type DateLimitAny = undefined;
 export type DateLimitStatic = number;
 export type DateLimitList = number[];
-export type DateLimitNSeries = { slope: number, offset?: number };
-export type DateLimitRange = Range<number>;
+export type DateLimitNSeries = { slope: number; offset?: number };
+export type DateLimitRange = RequiredAtLeastOne<Range<number>>;
 
-export type DateLimitPartConfig =
-  | DateLimitAny
-  | DateLimitStatic
-  | DateLimitList
-  | DateLimitNSeries
-  | DateLimitRange;
+export type DateLimitPartConfig = DateLimitAny | DateLimitStatic | DateLimitList | DateLimitNSeries | DateLimitRange;
