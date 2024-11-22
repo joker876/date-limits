@@ -1,244 +1,99 @@
-# simple-bool
+# date-limits
 
-A simple set of functions that return a boolean.
+Check if a date is before a flexible limit.
 
 ## Highlights
-* Supports TypeScript!
-* Supports Node and browser
-* Includes full JSDoc documentation
-* Very lightweight!
+
+- Supports TypeScript!
+- Includes full JSDoc documentation
+- Very lightweight!
+- 100% test coverage!
 
 ## Installation
-### NodeJS
-```
-npm install simple-bool --save
-```
 
-### Browser
-Import the script:
-```html
-<script src="https://joker876.github.io/simple-bool/simple-bool.min.js">
 ```
-And import the functions from a global object:
-```js
-SimpleBool.isDefined();
-// or
-const { isDefined, isNumber, ... } = SimpleBool;
+npm install date-limits
 ```
 
 ## Usage
 
-```typescript
-import * from 'simple-bool';
-// or
-import { /* function names here */ } from 'simple-bool';
+```ts
+import { getClosestDate, ... } from 'date-limits';
 ```
 
-### Available functions
-#### isDefined
-```typescript
-isDefined(value: any): boolean
-```
-Returns `false` if the value is `undefined` or `null`. Otherwise returns `true`.
+### getClosestDate
 
-#### isNull
-```typescript
-isNull(value: any): boolean
-```
-Returns `true` if the value is `null`. Otherwise returns `false`.
-
-#### isBoolean
-```typescript
-isBoolean(value: any): boolean
-```
-Returns `true` if the value is `true` or `false`. Otherwise returns `false`.
-
-#### isAnyString
-```typescript
-isAnyString(value: any): boolean
-```
-Returns `true` if the value is of type `string`. Otherwise returns `false`.
-
-#### isString
-```typescript
-isString(value: any): boolean
-```
-Returns `true` if the value is of type `string`, and is not an empty string. Otherwise returns `false`.
-
-#### isNumber
-```typescript
-isNumber(value: any): boolean
-```
-Returns `true` if the value is of type `number`, and is not a `NaN`. Otherwise returns `false`.
-
-#### isInt
-```typescript
-isInt(value: any): boolean
-```
-Returns `true` if the value [is a number](#isnumber), and it **doesn't** have any decimal places. Otherwise returns `false`.
-
-#### isFloat
-```typescript
-isFloat(value: any): boolean
-```
-Returns `true` if the value [is a number](#isnumber), and it **does** have some decimal places. Otherwise returns `false`.
-
-#### isObject
-```typescript
-isObject(value: any): boolean
-```
-Returns `true` if the value is of type `object`, and [is defined](#isdefined). Otherwise returns `false`.
-
-#### isArray
-```typescript
-isArray(value: any): boolean
-```
-Returns `true` if the value is an array. Otherwise returns `false`.
-
-#### isEmpty
-```typescript
-isEmpty(value: object | string): boolean
-```
-Returns `true` if:
-* the value is a string, and its length is greater than 0,
-* the value is an array, and it has at least 1 item,
-* the value is an object, and it has at least 1 key.
-
-Otherwise returns `false`.
-
-#### isClassDeclaration
-```typescript
-isClassDeclaration(value: any): boolean
-```
-Returns `true` if the value is a class declaration. Otherwise returns `false`. All native classes will return `false`.
-
-Example:
-```typescript
-class Example {
-    constructor() {}
-}
-
-isClassDeclaration(Example); // -> true
-isClassDeclaration(RegExp);  // -> false
+```ts
+function getClosestDate(config: DateLimitConfig, targetDate: Date = new Date(), yearLimit: number = 1970): Date | null;
 ```
 
-#### isInstanceOf
-```typescript
-isInstanceOf(value: any, cls: Function): boolean
+Finds the closest date that matches the given config and is before the _targetDate_, and the year does not exceed the _yearLimit_.
+
+Returns the closest date as a `Date` object, or `null` if no date is found or the year limit was reached.
+
+### isDateBeforeLimit
+
+```ts
+function isDateBeforeLimit(
+  date: Date,
+  configOrArray: DateLimitConfig | DateLimitConfig[],
+  referenceDate?: Date,
+  yearLimit?: number
+): boolean;
 ```
-Returns `true` if the value is an instance of the class *cls*. Otherwise returns `false`.
 
-#### isPromise
-```typescript
-isPromise(value: any): boolean
+Finds the closest date(s) matching the config object(s), that are below the _referenceDate_. Then tests if the given date is earlier than any of the found dates.
+
+Returns `true` if the given _date_ is before the closest matching date to the reference date, otherwise `false`. If no matching dates were found also returns `false`.
+
+### DateLimitConfig
+
+Date requirements can be configured separately for the year, the month, and the day. All of those fields accept any of the below:
+
+- `undefined` - matches any date.
+- `number` - matches only if the date matches this exact number. Negative values can be used to signify the days from the end of the month (-1 is the last day, -2 the second to last day, etc.)
+- `number[]` - matches only if the date is included in the array.
+- `{ slope: number, offset?: number }` - matches only if the date is an element of the given arithmetic sequence (think eg. 3n+1).
+- `{ from: number, to: number }` - matches only if the date is between `from` and `to` (inclusive). Any of those values can be ommitted, resulting in no lower or no upper boundary.
+
+**Note:** The months and days are 1-indexed, meaning numbers 1-12 and 1-31 are accepted respectively.
+
+#### Examples
+
+```ts
+{ year: undefined, month: 5, day: [1, 7] } // matches any date that is the 1st or the 7th of May
+{ year: { from: 2000, to: 2030 } } // matches any date that is between the years 2000 and 2030
+{ month: { slope: 3 }, day: -1 } // matches the last day of every 3rd month
 ```
-Returns `true` if the value is a Promise. Otherwise returns `false`.
 
-#### isFunction
-```typescript
-isFunction(value: any): boolean
+### checkDateMatches
+
+```ts
+export function checkDateMatches(date: Date, config: DateMatchesConfig): boolean;
 ```
-Returns `true` if the value [is an instance of](#isinctanceof) Function. Otherwise returns `false`.
 
-All standard functions, arrow functions, classes, constructors, etc. count towards being a Function.
+Checks if the given date matches the cron-like config.
 
-#### isRegExp
-```typescript
-isRegExp(value: any): boolean
+Returns `true` if the date matches the config, otherwise `false`.
+
+### DateMatchesConfig
+
+Date matching requirements can be configured separately for the year, the month, the day, and the weekday. All of those fields can accept any of the below:
+
+- `undefined` - matches any date.
+- `number` - matches only if the date matches this exact number. Negative values can be used to signify the days from the end of the month (-1 is the last day, -2 the second to last day, etc.)
+- `number[] | Set<number>` - matches only if the date is included in the array or Set.
+- `{ slope: number, offset?: number }` - matches only if the date is an element of the given arithmetic sequence (think eg. 3n+1).
+- `{ from: number, to: number }` - matches only if the date is between `from` and `to` (inclusive). Any of those values can be ommitted, resulting in no lower or no upper boundary.
+
+**Note:** The months and days are 1-indexed, meaning numbers 1-12 and 1-31 are accepted respectively. The weekdays are 0-indexed (with 0 being Sunday, 1 being Monday, ...). Number 7 can also mean Sunday, but using 0 for Sunday is preferred.
+
+#### Examples
+
+```ts
+{ month: 5, day: [1, 7] } // matches any date that is the 1st or the 7th of May
+{ month: new Set([1, 2, 4, 8]), weekday: 0 } // matches any Sunday in the months January, February, Aprril, and August.
+{ year: { from: 2000, to: 2030 } } // matches any date that is between the years 2000 and 2030
+{ month: { slope: 3 }, day: -1 } // matches the last day of every 3rd month
+{ year: { from: 1969 }, month: 2, day: 29, weekday: 5 } // matches any 29th of February that is also a Friday and is in or after the year 1969
 ```
-Returns `true` if the value is a regular expression. Otherwise returns `false`.
-
-#### isDate
-```typescript
-isDate(value: any): boolean
-```
-Returns `true` if the value is [is an instance of](#isinctanceof) Date, or can be parsed into a valid Date. Otherwise returns `false`.
-
-All numbers return `true` when passed into `isDate`.
-
-#### hasProp
-```typescript
-hasProp(value: any, property: PropertyKey): boolean
-```
-Returns `true` if the value is an object which has a certain property *property*. Otherwise returns `false`.
-
-#### evaluate
-```typescript
-evaluate(value: any): boolean
-```
-Returns `true` if:
-* the value is equal to `true`,
-* the value is a number, and is not 0,
-* the value is an array, and it has at least 1 item,
-* the value is an object, and it has at least 1 key,
-* the value is any of those strings: (case insensitive)
-  ```typescript
-  'yes', 'y', '1', 't', 'true', 'on', 'sure'
-  ```
-
-Otherwise returns `Boolean(value)`.
-
-#### all
-```typescript
-all<T>(array: T[], fn: (value: T) => boolean = Boolean): boolean
-```
-Firstly, it flattens the given *array*.
-
-For each item in *array*, it calls *fn* and passes the item.
-
-It counts the times *fn* returns either `true` or `false`.
-
-At the end, it returns `true` only if *fn* returned `true` for all items. Otherwise returns `false`.
-
-#### most
-```typescript
-most<T>(array: T[], fn: (value: T) => boolean = Boolean): boolean
-```
-Firstly, it flattens the given *array*.
-
-For each item in *array*, it calls *fn* and passes the item.
-
-It counts the times *fn* returns either `true` or `false`.
-
-At the end, it returns `true` only if *fn* returned `true` for at least 50% of all items. Otherwise returns `false`.
-
-#### any
-```typescript
-any<T>(array: T[], fn: (value: T) => boolean = Boolean): boolean
-```
-Firstly, it flattens the given *array*.
-
-For each item in *array*, it calls *fn* and passes the item.
-
-It counts the times *fn* returns either `true` or `false`.
-
-At the end, it returns `true` if *fn* returned `true` for at least 1 item. Otherwise returns `false`.
-
-#### none
-```typescript
-none<T>(array: T[], fn: (value: T) => boolean = Boolean): boolean
-```
-Firstly, it flattens the given *array*.
-
-For each item in *array*, it calls *fn* and passes the item.
-
-It counts the times *fn* returns either `true` or `false`.
-
-At the end, it returns `true` only if *fn* returned `false` for all items. Otherwise returns `false`.
-
-#### some
-```typescript
-some<T>(array: T[], threshold: number, fn: (value: T) => boolean = Boolean): boolean
-```
-Firstly, it flattens the given *array*.
-
-For each item in *array*, it calls *fn* and passes the item.
-
-It counts the times *fn* returns either `true` or `false`.
-
-At the end, it compares these amounts to the threshold:
-* if the threshold is less than or equal to 0, it always returns `true`,
-* if the threshold is between 0 and 1 (non-inclusive), it is treated as a percetage, and it returns `true` only if *fn* returned `true` at least that many percent of all executions,
-* if the threshold is greater than or equal to 1, it returns `true` only if *fn* returned `true` at least that many times.
-
-In all other cases, it returns `false`.

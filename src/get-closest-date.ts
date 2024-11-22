@@ -1,17 +1,30 @@
 import { createUTCDate, isValidDate, standardizeDay } from './date-utils';
-import { GeneralGenerator, } from './generators/general-generator';
+import { GeneralGenerator } from './generators/general-generator';
 import { makeYearGenerator, YearGenerator } from './generators/year-generator';
 import { DateLimitConfig } from './types';
 
-export function getClosestDate(config: DateLimitConfig, targetDate: Date = new Date(), yearLimit: number = 1970) {
+/**
+ * Finds the closest date that matches the given config and is before the *targetDate*, and the year does not exceed the *yearLimit*.
+ *
+ * Returns the closest date as a Date object, or null if no date is found or the year limit was reached.
+ * @param config The config to match the date against.
+ * @param targetDate To date to start looking from for the closest match.
+ * @param yearLimit The lower limit for finding matching dates.
+ * @returns `Date` object if a matching date is found, otherwise `null`.
+ */
+export function getClosestDate(
+  config: DateLimitConfig,
+  targetDate: Date = new Date(),
+  yearLimit: number = 1970
+): Date | null {
   let currentYear: number = targetDate.getFullYear(),
     currentMonth: number = targetDate.getMonth() + 1,
     currentDay: number = targetDate.getDate();
-  
+
   if (currentYear < yearLimit) {
     throw new Error(`Target date cannot be lower than the year limit.`);
   }
-  
+
   const data = _getClosestDateHelper(
     targetDate,
     makeYearGenerator(config.year, currentYear, yearLimit),

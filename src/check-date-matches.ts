@@ -29,12 +29,12 @@ type DateMatchesConfigNSeries = { slope: number; offset?: number };
 type DateMatchesConfigRange = RequiredAtLeastOne<Range<number>>;
 
 /**
- * Represents a part of the date selector configuration, which can take various forms:
+ * Represents a part of the date matcher configuration, which can take various forms:
  * - `undefined`: Matches any value.
  * - `number`: Matches an exact value.
  * - `number[]` or `Set<number>`: Matches any value in the list or set.
  * - `{ slope: number, offset?: number }`: Matches values in an arithmetic sequence.
- * - `Range<number>`: Matches values within a specific range.
+ * - `Range<number>`: Matches values within a specific range. Both values are optional, but at least one has to be defined.
  */
 export type DateMatchesPartConfig =
   | DateMatchesConfigAny
@@ -44,8 +44,7 @@ export type DateMatchesPartConfig =
   | DateMatchesConfigRange;
 
 /**
- * Determines if a given date matches the criteria specified in the configuration.
- *
+ * Checks if the given date matches the cron-like config.
  * @param date - The date to check.
  * @param config - The configuration object defining the criteria.
  * @returns `true` if the date matches the criteria, otherwise `false`.
